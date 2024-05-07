@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import "video.js/dist/video-js.css";
 ---
 
 <Layout title="Sharer">
@@ -8,12 +9,13 @@ import Layout from "../layouts/Layout.astro";
 
     <h2 id="peer-id">My Peer ID:</h2>
 
-    <div class="peer-input">
-      <h2>Other Peer ID:</h2>
-      <input type="text" id="remote-peer-id" />
-    </div>
-
-    <button id="main-btn">Start Screen Sharing!</button>
+    <video
+      id="local-video"
+      class="video-js vjs-big-play-centered"
+      controls
+      preload="auto"
+      data-setup="{}"
+      autoplay></video>
   </main>
 </Layout>
 
@@ -27,93 +29,23 @@ import Layout from "../layouts/Layout.astro";
     peerId!.textContent = `My Peer ID: ${id}`;
   });
 
-  let peers;
-
-  peer.on("connection", (conn) => {
-    conn.on("data", (data) => {
-      console.log(data);
+  peer.on("connection", async (conn) => {
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: true,
     });
 
-    conn.on("open", () => {
-      conn.send("Hello!");
-    });
+    peer.call(conn.peer, stream);
+
+    const videoElement = document.getElementById(
+      "local-video"
+    ) as HTMLVideoElement;
+    videoElement.srcObject = stream;
+    videoElement.play();
   });
-
-  peer.on("call", (call) => {
-    call.answer();
-
-    call.on("stream", (stream) => {
-      const video = document.createElement("video");
-      video.srcObject = stream;
-      video.autoplay = true;
-      document.body.appendChild(video);
-    });
-  });
-
-  //   const remotePeerId = document.getElementById(
-  //     "remote-peer-id"
-  //   ) as HTMLInputElement;
-
-  //   remotePeerId.addEventListener("change", (e) => {
-  //     const conn = peer.connect(remotePeerId.value);
-  //   });
-
-  //   const btn = document.getElementById("main-btn");
-  //   btn!.addEventListener("click", async () => {
-  //     const stream = await navigator.mediaDevices.getUserMedia({
-  //       video: true,
-  //       audio: true,
-  //     });
-
-  //     const call = peer.call("remote-peer-id", stream);
-
-  //     const video = document.createElement("video");
-  //     video.srcObject = stream;
-  //     video.autoplay = true;
-  //     document.body.appendChild(video);
-  //   });
 </script>
 
 <style>
-  .peer-input {
-    display: flex;
-
-    margin-bottom: 1rem;
-  }
-
-  .peer-input h2 {
-    margin-right: 1rem;
-  }
-
-  .peer-input input {
-    font-size: 1rem;
-    border: 1px solid rgba(var(--accent-light), 25%);
-    border-radius: 8px;
-
-    padding: 0.1rem;
-  }
-
-  button {
-    padding: 1rem 2rem;
-    font-size: 1.2rem;
-    background: linear-gradient(
-      90deg,
-      rgba(var(--accent-light), 33%),
-      rgba(var(--accent-dark), 66%)
-    );
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: transform 0.2s;
-
-    display: block;
-    margin: 0 auto;
-  }
-  button:hover {
-    transform: scale(1.05);
-  }
-
   main {
     margin: auto;
     padding: 1rem;
@@ -172,5 +104,11 @@ import Layout from "../layouts/Layout.astro";
     grid-template-columns: repeat(auto-fit, minmax(24ch, 1fr));
     gap: 2rem;
     padding: 0;
+  }
+
+  video {
+    width: 100%;
+    height: auto;
+    border-radius: 8px;
   }
 </style>

@@ -15,6 +15,7 @@
     "@playform/compress": "^0.0.3",
     "astro": "^4.7.1",
     "peerjs": "^1.5.2",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "video.js": "^8.12.0"
   }
 }
