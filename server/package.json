@@ -14,6 +14,7 @@
     "@astrojs/node": "^8.2.5",
     "@playform/compress": "^0.0.3",
     "astro": "^4.7.1",
+    "peerjs": "^1.5.2",
     "typescript": "^5.4.5"
   }
 }
