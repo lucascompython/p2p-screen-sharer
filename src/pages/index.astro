@@ -1,0 +1,199 @@
+---
+import Layout from "../layouts/Layout.astro";
+import "video.js/dist/video-js.css";
+---
+
+<Layout title="Screen Share">
+    <main>
+        <h1>Screen Share</h1>
+        <h2 id="peer-id">My Peer ID: ...</h2>
+        <div class="peer-input">
+            <input
+                id="remote-peer-id"
+                placeholder="Other Peer ID"
+                style="font-size:1.2em;padding:0.5em;border-radius:8px;border:1px solid #ccc;width:300px;max-width:90%;"
+            />
+            <button id="connect-btn">Connect</button>
+            <button id="share-btn">Share Screen</button>
+        </div>
+        <div id="peers-count" style="margin-top:1em;color:#e0ccfa;">
+            Connected peers: 0
+        </div>
+        <div id="video-container" style="margin-top:2em;display:none;">
+            <video
+                id="remote-video"
+                autoplay
+                controls
+                style="width:100%;max-width:800px;border-radius:8px;background:#23262d;"
+            ></video>
+        </div>
+    </main>
+</Layout>
+
+<script>
+    import Peer from "peerjs";
+
+    const peerIDElem = document.getElementById("peer-id");
+    const remotePeerIDInput = document.getElementById("remote-peer-id");
+    const connectButton = document.getElementById("connect-btn");
+    const shareButton = document.getElementById("share-btn");
+    const peersCountElem = document.getElementById("peers-count");
+    const videoContainer = document.getElementById("video-container");
+    const remoteVideo = document.getElementById("remote-video");
+
+    let peer = new Peer();
+    let connectedPeers = new Set();
+
+    peer.on("open", (id) => {
+        peerIDElem!.textContent = `My Peer ID: ${id}`;
+    });
+
+    // Update connected peers count
+    function updatePeersCount() {
+        peersCountElem!.textContent = `Connected peers: ${connectedPeers.size}`;
+    }
+
+    // When someone connects to us (as sharer)
+    peer.on("connection", (conn) => {
+        connectedPeers.add(conn.peer);
+        updatePeersCount();
+        conn.on("close", () => {
+            connectedPeers.delete(conn.peer);
+            updatePeersCount();
+        });
+        conn.on("error", () => {
+            connectedPeers.delete(conn.peer);
+            updatePeersCount();
+        });
+    });
+
+    connectButton!.onclick = () => {
+        // @ts-ignore
+        const remoteID = remotePeerIDInput!.value.trim();
+        if (!remoteID) return;
+        const conn = peer.connect(remoteID);
+        conn.on("open", () => {
+            connectedPeers.add(remoteID);
+            updatePeersCount();
+            videoContainer!.style.display = "block";
+        });
+        conn.on("close", () => {
+            connectedPeers.delete(remoteID);
+            updatePeersCount();
+            videoContainer!.style.display = "none";
+        });
+        conn.on("error", () => {
+            connectedPeers.delete(remoteID);
+            updatePeersCount();
+            videoContainer!.style.display = "none";
+        });
+        peer.on("call", (call) => {
+            call.answer();
+            call.on("stream", (remoteStream) => {
+                // @ts-ignore
+                remoteVideo!.srcObject = remoteStream;
+                // @ts-ignore
+                remoteVideo!.play();
+            });
+            call.on("close", () => {
+                // @ts-ignore
+                remoteVideo!.srcObject = null;
+            });
+        });
+    };
+
+    shareButton!.onclick = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getDisplayMedia({
+                video: {
+                    width: { max: 2560 },
+                    height: { max: 1440 },
+                    frameRate: { ideal: 60, max: 165 },
+                },
+                audio: true,
+            });
+            peer.on("connection", (conn) => {
+                const call = peer.call(conn.peer, stream);
+                call.on("close", () => {
+                    connectedPeers.delete(conn.peer);
+                    updatePeersCount();
+                });
+            });
+        } catch (err) {
+            alert("Screen sharing failed: " + err);
+        }
+    };
+</script>
+
+<style>
+    .peer-input {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 1em;
+        margin-top: 2em;
+    }
+    .peer-input input {
+        font-size: 1.2em;
+        border: 1px solid rgba(var(--accent-light), 25%);
+        border-radius: 8px;
+        padding: 0.5em;
+        width: 300px;
+        max-width: 90%;
+    }
+    .peer-input button {
+        font-size: 1.2em;
+        padding: 0.7em 1.5em;
+        border-radius: 8px;
+        border: none;
+        background: linear-gradient(
+            45deg,
+            rgb(var(--accent)),
+            rgb(var(--accent-light))
+        );
+        color: #23262d;
+        font-weight: bold;
+        cursor: pointer;
+        margin-left: 0.5em;
+    }
+    .peer-input button:hover {
+        background: linear-gradient(
+            45deg,
+            rgb(var(--accent-light)),
+            rgb(var(--accent))
+        );
+    }
+    main {
+        margin: auto;
+        padding: 2em 1em;
+        width: 100%;
+        max-width: 800px;
+        color: white;
+        font-size: 20px;
+        line-height: 1.6;
+        text-align: center;
+    }
+    h1 {
+        font-size: 3rem;
+        font-weight: 700;
+        line-height: 1;
+        text-align: center;
+        margin-bottom: 1em;
+    }
+    .text-gradient {
+        background-image: var(--accent-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-size: 400%;
+        background-position: 0%;
+    }
+    #video-container {
+        margin-top: 2em;
+    }
+    video {
+        width: 100%;
+        height: auto;
+        border-radius: 8px;
+        background: #23262d;
+    }
+</style>
