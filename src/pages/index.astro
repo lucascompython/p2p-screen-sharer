@@ -106,8 +106,8 @@ import "video.js/dist/video-js.css";
         try {
             const stream = await navigator.mediaDevices.getDisplayMedia({
                 video: {
-                    width: { max: 2560 },
-                    height: { max: 1440 },
+                    width: { ideal: 2560, max: 2560 },
+                    height: { ideal: 1440, max: 1440 },
                     frameRate: { ideal: 60, max: 165 },
                 },
                 audio: true,
@@ -197,3 +197,5 @@ import "video.js/dist/video-js.css";
         background: #23262d;
     }
 </style>
+
+// YAY Ta a dar ne?
