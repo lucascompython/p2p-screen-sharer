@@ -6,7 +6,10 @@ import "video.js/dist/video-js.css";
 <Layout title="Screen Share">
     <main>
         <h1>Screen Share</h1>
-        <h2 id="peer-id">My Peer ID: ...</h2>
+        <div style="display:flex;align-items:center;justify-content:center;gap:0.5em;">
+            <h2 id="peer-id">My Peer ID: ...</h2>
+            <button id="copy-peerid-btn" title="Copy Peer ID" style="font-size:1em;padding:0.3em 0.8em;border-radius:6px;border:none;background:linear-gradient(45deg,rgb(var(--accent)),rgb(var(--accent-light)));color:#23262d;cursor:pointer;">Copy</button>
+        </div>
         <div class="peer-input">
             <input
                 id="remote-peer-id"
@@ -46,6 +49,15 @@ import "video.js/dist/video-js.css";
 
     peer.on("open", (id) => {
         peerIDElem!.textContent = `My Peer ID: ${id}`;
+        document.getElementById("copy-peerid-btn")!.onclick = () => {
+            navigator.clipboard.writeText(id)
+                .then(() => {
+                    document.getElementById("copy-peerid-btn")!.textContent = "Copied!";
+                    setTimeout(() => {
+                        document.getElementById("copy-peerid-btn")!.textContent = "Copy";
+                    }, 1200);
+                });
+        };
     });
 
     // Update connected peers count
